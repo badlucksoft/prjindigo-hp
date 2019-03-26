@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteRule .*\.(inc|class)\.php$ /404.php [L]
+RewriteCond %{REQUEST_URI} !^\/index\.php
+RewriteRule .* /index.php [L]
