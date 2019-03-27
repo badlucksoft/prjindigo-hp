@@ -2,6 +2,7 @@
 define('USE_SSL_TLS',false);
 define('BASE_DOMAIN_NAME','example.com');
 define('BASE_URL','http' . (USE_SSL_TLS ? 's':'') . BASE_DOMAIN_NAME);
+define('SITE_NAME','My Site'); // Change this
 define('LOGIN_URI', '/Sojourn/Exodus'); // Strongly reommended that you change this.
 define('LOGIN_PERIOD',120);
 define('LOGIN_COOKIE_NAME',hash('sha256','XcRbzsGjBVMBvTroRUyC5MDx8PZDBCEE')); // Strongly recommended that you change this.
