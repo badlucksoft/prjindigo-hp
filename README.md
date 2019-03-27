@@ -3,7 +3,7 @@
 This code is intended to be a functional website example of how to implement a Project Indigo honeypot.
 These are the initial development commits; much more to come as this is fully implemented.
 
-#A Word on the Code's Security
+# A Word on the Code's Security
 
 In the config.inc.php file you will find a few settings that should be changed immediately; each one is marked with a
 comment on the same line indicating that they should be changed. While it is fine to have the "admin" user name
