@@ -3,7 +3,8 @@ try {
 	$GLOBALS['db'] = new PDO('sqlite' . ':' . DATABASE_FILENAME,null,null);
 	$GLOBALS['db']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	$GLOBALS['db']->exec( 'PRAGMA foreign_keys = ON;' );
-	prepareStatements();
+	$GLOBALS['stmts'] = array();
+	$GLOBALS['stmts']['table_exists'] = $GLOBALS['db']->prepare('select name from sqlite_master where type=\'table\' and name= ?');
 	$tables = array('site','addrs','a404','aweb');
 	foreach($tables as $table)
 	{
@@ -13,6 +14,7 @@ try {
 		if( empty($name) || $name === false || strcmp($name,$table) != 0 )
 			createTable($table);
 	}
+	prepareStatements();
 
 }
 catch(PDOException $e) {
@@ -20,8 +22,6 @@ catch(PDOException $e) {
 }
 
 function prepareStatements(){
-	$GLOBALS['stmts'] = array();
-	$GLOBALS['stmts']['table_exists'] = $GLOBALS['db']->prepare('select name from sqlite_master where type=\'table\' and name= ?');
 	$GLOBALS['stmts']['insert_site_default'] = $GLOBALS['db']->prepare('insert into site(text) values (?)');
 	$GLOBALS['stmts']['get_site_data'] = $GLOBALS['db']->prepare('select text from site');
 	$GLOBALS['stmts']['get_addr_id'] = $GLOBALS['db']->prepare('select addr_id from addrs where addr = ?');
