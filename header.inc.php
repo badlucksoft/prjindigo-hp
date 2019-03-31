@@ -43,4 +43,4 @@ header('Vary: origin');
 </div>
   </div>
 </nav>
-<div id="main_body_div" style="background: white; padding: 10px; position: absolute; top: 50px; right:50px; left:50px; bottom:50px;padding: 50px;">
+<div id="main_body_div" style="background: white; padding: 10px; position: absolute; top: 110px; right:50px; left:50px; bottom:50px;padding: 50px;">
