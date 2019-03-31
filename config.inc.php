@@ -3,8 +3,8 @@
 	Website basics
 */
 define('USE_SSL_TLS',false);
-define('BASE_DOMAIN_NAME','example.com');
-define('BASE_URL','http' . (USE_SSL_TLS ? 's':'') . BASE_DOMAIN_NAME);
+define('BASE_DOMAIN_NAME',$_SERVER['HTTP_HOST']);
+define('BASE_URL','http' . (USE_SSL_TLS ? 's':'') . '://' . BASE_DOMAIN_NAME);
 define('SITE_NAME','My Site'); // Change this
 
 /*

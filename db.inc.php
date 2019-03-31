@@ -28,7 +28,7 @@ function prepareStatements(){
 	$GLOBALS['stmts']['insert_addr'] = $GLOBALS['db']->prepare('insert into addrs (addr) values (?)');
 	if( defined('INSERT_SITE_DEFAULTS') && INSERT_SITE_DEFAULTS)
 	{
-			$defaults = array('last_sync_timestamp' => null,'sync_count' => 0, 'last_login_attack_id_synced' => 0, 'last_404_attack_id_synced' => 0, 'last_attack_id_synced' => 0, 'last_addrs_id_synced' => 0);
+			$defaults = array('db_creation_timestamp' => gmdate('c'),'last_sync_timestamp' => null,'sync_count' => 0, 'last_login_attack_id_synced' => 0, 'last_404_attack_id_synced' => 0, 'last_attack_id_synced' => 0, 'last_addrs_id_synced' => 0);
 			$GLOBALS['stmts']['insert_site_default']->execute(array(json_encode($defaults)));
 			$GLOBALS['stmts']['insert_site_default']->closeCursor();
 	}
