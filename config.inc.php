@@ -50,4 +50,5 @@ define('HOMEPAGE_CONTENT_FILENAME',SITE_DIR . 'homepage.content.html');
 define('MAXIMUM_SYNC_WINDOW', 86400); // wait at most 1 day before synchronizing
 
 require_once 'db.inc.php';
+require_once 'functions.inc.php';
 register_shutdown_function('PISynchronize');
