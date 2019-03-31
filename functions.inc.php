@@ -50,6 +50,10 @@ function requestorIP()
 	elseif( ! is_null($proxyip) && isPrivateIP($proxyip) === false  ) $ip = $proxyip;
 	return $ip;
 }
+function PISynchronize()
+{
+	echo '<!-- PISynchronize -->';
+}
 function pkEncrypt($SENDER_PRIVATE_KEY,$RECEIVER_PUBLIC_KEY,$CONTENT,$NONCE = null)
 {
 	$kp = sodium_crypto_box_keypair_from_secretkey_and_publickey($SENDER_PRIVATE_KEY, $RECEIVER_PUBLIC_KEY);

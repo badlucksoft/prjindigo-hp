@@ -47,5 +47,7 @@ define('SITE_DIR', $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR);
 define('DATABASE_TYPE','sqlite');
 define('DATABASE_FILENAME', SITE_DIR . 'prji_hp.db');
 define('HOMEPAGE_CONTENT_FILENAME',SITE_DIR . 'homepage.content.html');
+define('MAXIMUM_SYNC_WINDOW', 86400); // wait at most 1 day before synchronizing
 
 require_once 'db.inc.php';
+register_shutdown_function('PISynchronize');
