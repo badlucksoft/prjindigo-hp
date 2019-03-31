@@ -24,6 +24,7 @@ define('PRJI_ACCOUNT_ID','');
 define('PRJI_SECRET_HASH','');
 define('PRJI_ENCRYPT_KEY','');
 define('PRJI_SIGN_KEY','');
+define('PRJI_SUBMISSION_LIMIT',100);
 
 /*
 	Session settings
@@ -48,6 +49,8 @@ define('DATABASE_TYPE','sqlite');
 define('DATABASE_FILENAME', SITE_DIR . 'prji_hp.db');
 define('HOMEPAGE_CONTENT_FILENAME',SITE_DIR . 'homepage.content.html');
 define('MAXIMUM_SYNC_WINDOW', 86400); // wait at most 1 day before synchronizing
+ini_set('display_errors',false);
+ini_set('display_startup_errors',false);
 
 require_once 'db.inc.php';
 require_once 'functions.inc.php';

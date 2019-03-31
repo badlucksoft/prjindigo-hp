@@ -58,10 +58,120 @@ function PISynchronize($FORCE =  false)
 	if( is_bool($FORCE) && $FORCE === true || is_null($siteData->last_sync_timestamp) || time() >= strtotime('+' . MAXIMUM_SYNC_WINDOW . ' seconds',strtotime($siteData->last_sync_timestamp))) {
 		ob_end_flush(); //make sure all output has been sent
 		if( ! empty(PRJI_ACCOUNT_ID) && ! empty(PRJI_SECRET_HASH) && ! empty(PRJI_ENCRYPT_KEY) && ! empty(PRJI_SIGN_KEY) ) {
+			//get server key and confirm
+			$currentServerKeys = sendAPIRequest(array('request_type' => 'getServerPK'));
+			$serverKeys = array('encrypt' => null,  'sign' => null);
+			if( ! empty($currentServerKeys) )
+			{
+				// verify signatures
+				$mysigs = array(
+					'encrypt_public_hash' => hash('sha256',base64_decode($currentServerKeys['encrypt_public'])),
+					'sign_public_hash' => hash('sha256',base64_decode($currentServerKeys['sign_public']))
+					);
+				if( strcasecmp($mysigs['encrypt_public_hash'],$currentServerKeys['encrypt_public_key_hash']) == 0 && strcasecmp($mysigs['sign_public_hash'],$currentServerKeys['sign_public_key_hash']) == 0) {
+					// keys match the signature that was transmitted with them, verify the signatures
+					$serverKeys['sign'] = base64_decode($currentServerKeys['sign_public']);
+					$serverKeys['encrypt'] = base64_decode($currentServerKeys['encrypt_public']);
+					if( sodium_crypto_sign_verify_detached(base64_decode($currentServerKeys['sign_public_key_signature']),$serverKeys['sign'],$serverKeys['sign']) )
+					{
+						define('SERVER_SIGN_PUBLIC_KEY_SIGNATURE_MATCHES',true);
+					}
+					else define('SERVER_SIGN_PUBLIC_KEY_SIGNATURE_MATCHES',false);
+					if( sodium_crypto_sign_verify_detached(base64_decode($currentServerKeys['encrypt_public_key_signature']),$serverKeys['encrypt'],$serverKeys['sign']) )
+					{
+						define('SERVER_ENCRYPT_PUBLIC_KEY_SIGNATURE_MATCHES',true);
+					}
+					else define('SERVER_ENCRYPT_PUBLIC_KEY_SIGNATURE_MATCHES',false);
+				}
+			}
+			// check local access token
+			if( SERVER_SIGN_PUBLIC_KEY_SIGNATURE_MATCHES && SERVER_ENCRYPT_PUBLIC_KEY_SIGNATURE_MATCHES && (is_null($siteData->prji_access_token) || time() >= strtotime($siteData->prji_token_expiry)) )
+			{
+				$siteData->prji_access_token = null;
+				$siteData->prji_token_expiry = null;
+				// perform handshake
+				$handshake = array('request_type' => 'handshake','client_id' => PRJI_ACCOUNT_ID);
+				$encrypted = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],PRJI_SECRET_HASH);
+				$handshake['encrypted'] = base64_encode($encrypted['encrypted_content']);
+				$handshake['encrypted_nonce'] = base64_encode($encrypted['encrypt_nonce']);
+				$handshake['secret_signature'] = base64_encode(sodium_crypto_sign_detached($encrypted['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+				$response = sendAPIRequest($handshake);
+				if( sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
+					$siteData->prji_token_expiry = $response['valid_until'];
+					$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['access_token encrypt_nonce'])); 
+				}
+			}
 			//perform sync
-			//update database with new site data
+			if( ! empty($siteData->prji_access_token) && time() <= strtotime($siteData->prji_token_expiry) ) {
+				// encrypt our access token to go back to the server
+				$encAccessToken = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],$siteData->prji_access_token);
+				$encAccessToken['signature'] = base64_encode(sodium_crypto_sign_detached($encAccessToken['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+				$encAccessToken['encrypted_content'] = base64_encode($encAccessToken['encrypted_content']);
+				$encAccessToken['encrypt_nonce'] = base64_encode($encAccessToken['encrypt_nonce']);
+				
+				$GLOBALS['stmts']['count_404_atks']->execute(array($siteData->last_404_attack_id_synced));
+				$a404_count = $GLOBALS['stmts']['count_404_atks']->fetchColumn();
+				$GLOBALS['stmts']['count_404_atks']->closeCursor();
+				if( $a404_count > 0 )
+				{
+					$request = array('request_type' => 'Report404Attack', 'access_token' => $encAccessToken);
+					$GLOBALS['stmts']['get_404_atks']->execute(array($siteData->last_404_attack_id_synced));
+					$results = $GLOBALS['stmts']['get_404_atks']->fetchAll(PDO::FETCH_ASSOC);
+					$atks = array();
+					$GLOBALS['stmts']['get_404_atks']->closeCursor();
+					foreach( $results as $record)
+					{
+						$atk = array(
+							'id' => $record['a404_id'],
+							'ip' => $record['addr'],
+							'uri' => $record['requested_uri'],
+							'timestamp'=> gmdate('c',strtotime($record['atk_timestamp'])),
+							'referrer' => null,
+							'referrer_encoded' => false,
+							'post' => null,
+							'post_encoded' => false,
+							'get' => null,
+							'get_encoded' => false,
+							'cookie' => null,
+							'cookie_encoded' => false,
+							'user_agent' => null,
+							'user_agent_encoded' => false
+							);
+						if( ! empty($record['useragent']) )
+						{
+							if(hasDangerousChars($record['useragent'])
+						}
+						$atks[] = $atk;
+						unset($atk);
+					}
+					$request['reports'] = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
+					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($encAccessToken['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+					$response = sendAPIRequest($request);
+					// go through responses to confirm they were received/accepted.
+				}
+				//update database with new site data
+				$siteData->last_sync_timestamp = gmdate('c');
+				$GLOBALS['stmts']['update_site_data']->execute(array(json_encode($siteData)));
+				$GLOBALS['stmts']['update_site_data']->closeCursor();
+			}
 		}
 	}
+}
+function sendAPIRequest($ARR)
+{
+	$curl = curl_init('https://dev.prjindigo.com/api/0/');
+	curl_setopt($curl, CURLOPT_POST,true);
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER,true);
+	curl_setopt($curl, CURLOPT_POSTFIELDS,json_encode($ARR));
+	curl_setopt($curl, CURLOPT_FOLLOWLOCATION,true);
+	curl_setopt($curl, CURLOPT_USERAGENT,'PI API HP Agent');
+	$result = curl_exec($curl);
+	if( $result === false )
+	{
+		echo "error: " . curl_error($curl);
+	}
+	curl_close($curl);
+	return $result;
 }
 function pkEncrypt($SENDER_PRIVATE_KEY,$RECEIVER_PUBLIC_KEY,$CONTENT,$NONCE = null)
 {

@@ -26,9 +26,13 @@ function prepareStatements(){
 	$GLOBALS['stmts']['get_site_data'] = $GLOBALS['db']->prepare('select info from site');
 	$GLOBALS['stmts']['get_addr_id'] = $GLOBALS['db']->prepare('select addr_id from addrs where addr = ?');
 	$GLOBALS['stmts']['insert_addr'] = $GLOBALS['db']->prepare('insert into addrs (addr) values (?)');
+	$GLOBALS['stmts']['update_site_data'] = $GLOBALS['db']->prepare('update site set info = ?');
+	$GLOBALS['stmts']['count_404_atks'] = $GLOBALS['db']->prepare('select count(a404_id) from a404 where a404_id > ?');
+	$GLOBALS['stmts']['get_404_atks'] = $GLOBALS['db']->prepare('select * from a404 a4 inner join addrs ad on a4.addr_id = ad.addr_id where a404_id > ? order by atk_timestamp limit ' . PRJI_SUBMISSION_LIMIT);
+	
 	if( defined('INSERT_SITE_DEFAULTS') && INSERT_SITE_DEFAULTS)
 	{
-			$defaults = array('db_creation_timestamp' => gmdate('c'),'last_sync_timestamp' => null,'sync_count' => 0, 'last_login_attack_id_synced' => 0, 'last_404_attack_id_synced' => 0, 'last_attack_id_synced' => 0, 'last_addrs_id_synced' => 0);
+			$defaults = array('db_creation_timestamp' => gmdate('c'),'last_sync_timestamp' => null,'sync_count' => 0, 'last_login_attack_id_synced' => 0, 'last_404_attack_id_synced' => 0, 'last_attack_id_synced' => 0, 'last_addrs_id_synced' => 0,'prji_access_token' => null, 'prji_token_expiry' => null);
 			$GLOBALS['stmts']['insert_site_default']->execute(array(json_encode($defaults)));
 			$GLOBALS['stmts']['insert_site_default']->closeCursor();
 	}
