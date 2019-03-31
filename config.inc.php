@@ -14,7 +14,7 @@ define('LOGIN_URI', '/Sojourn/Exodus'); // Strongly reommended that you change t
 define('LOGIN_PERIOD',120);
 define('LOGIN_COOKIE_NAME',hash('sha256','XcRbzsGjBVMBvTroRUyC5MDx8PZDBCEE')); // Strongly recommended that you change this.
 define('ADMIN_USER_NAME','user'); // Change this immediately!!
-define('ADMIN_PASSWORD',password_hash('password',PASSWORD_ARGON2I,array('cost' => PASSWORD_HASH_COST,'memory_cost' => 128000, 'time_cost' => 30, 'threads' => 4))); // Change this immediately!!
+define('ADMIN_PASSWORD',password_hash('password',PASSWORD_ARGON2I,array('cost' => 10,'memory_cost' => 128000, 'time_cost' => 30, 'threads' => 4))); // Change this immediately!!
 if( password_verify('password',ADMIN_PASSWORD)) die('CHANGE THE PASSWORD IMMEDIATELY.');
 
 /*
@@ -43,8 +43,9 @@ ini_set('session.use_only_cookies',true);
 /*
 	[Other] System Settings
 */
-
+define('SITE_DIR', $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR);
 define('DATABASE_TYPE','sqlite');
-define('DATABASE_FILENAME',$_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . 'prji_hp.db');
+define('DATABASE_FILENAME', SITE_DIR . 'prji_hp.db');
+define('HOMEPAGE_CONTENT_FILENAME',SITE_DIR . 'homepage.content.html');
 
 require_once 'db.inc.php';

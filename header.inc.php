@@ -12,9 +12,6 @@ header('Vary: origin');
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title><?php echo SITE_NAME;?></title>
-<?php
-
-?>
 <link rel="preload" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" as="style">
 <link rel="preload" href="https://code.jquery.com/jquery-3.3.1.min.js" as="script" crossorigin="anonymous">
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" as="script" crossorigin="anonymous">
@@ -41,11 +38,9 @@ header('Vary: origin');
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-    <!--<div class="navbar-nav">-->
-    <?php
-    	outputNavBar();
-    ?>
-    <!--</div>-->
+<div class="navbar-nav">
+<a class="nav-item nav-link" href="<?php echo BASE_URL;?>/login">Login</a>
+</div>
   </div>
 </nav>
-<div id="main_body_div" style="background: white; padding: 10px;">
+<div id="main_body_div" style="background: white; padding: 10px; position: absolute; top: 50px; right:50px; left:50px; bottom:50px;padding: 50px;">
