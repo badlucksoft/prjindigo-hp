@@ -22,8 +22,8 @@ catch(PDOException $e) {
 }
 
 function prepareStatements(){
-	$GLOBALS['stmts']['insert_site_default'] = $GLOBALS['db']->prepare('insert into site(text) values (?)');
-	$GLOBALS['stmts']['get_site_data'] = $GLOBALS['db']->prepare('select text from site');
+	$GLOBALS['stmts']['insert_site_default'] = $GLOBALS['db']->prepare('insert into site(info) values (?)');
+	$GLOBALS['stmts']['get_site_data'] = $GLOBALS['db']->prepare('select info from site');
 	$GLOBALS['stmts']['get_addr_id'] = $GLOBALS['db']->prepare('select addr_id from addrs where addr = ?');
 	$GLOBALS['stmts']['insert_addr'] = $GLOBALS['db']->prepare('inesrt into addrs (addr) values (?)');
 	if( defined('INSERT_SITE_DEFAULTS') && INSERT_SITE_DEFAULTS)
