@@ -50,9 +50,18 @@ function requestorIP()
 	elseif( ! is_null($proxyip) && isPrivateIP($proxyip) === false  ) $ip = $proxyip;
 	return $ip;
 }
-function PISynchronize()
+function PISynchronize($FORCE =  false)
 {
-	echo '<!-- PISynchronize -->';
+	$GLOBALS['stmts']['get_site_data']->execute();
+	$siteData = json_decode($GLOBALS['stmts']['get_site_data']->fetchColumn());
+	$GLOBALS['stmts']['get_site_data']->closeCursor();
+	if( is_bool($FORCE) && $FORCE === true || is_null($siteData->last_sync_timestamp) || time() >= strtotime('+' . MAXIMUM_SYNC_WINDOW . ' seconds',strtotime($siteData->last_sync_timestamp))) {
+		ob_end_flush(); //make sure all output has been sent
+		if( ! empty(PRJI_ACCOUNT_ID) && ! empty(PRJI_SECRET_HASH) && ! empty(PRJI_ENCRYPT_KEY) && ! empty(PRJI_SIGN_KEY) ) {
+			//perform sync
+			//update database with new site data
+		}
+	}
 }
 function pkEncrypt($SENDER_PRIVATE_KEY,$RECEIVER_PUBLIC_KEY,$CONTENT,$NONCE = null)
 {
