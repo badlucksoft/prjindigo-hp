@@ -96,25 +96,26 @@ function PISynchronize($FORCE =  false)
 				$handshake['encrypted_nonce'] = base64_encode($encrypted['encrypt_nonce']);
 				$handshake['secret_signature'] = base64_encode(sodium_crypto_sign_detached($encrypted['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 				$response = sendAPIRequest($handshake);
+				unset($handshake);
 				if( sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
 					$siteData->prji_token_expiry = $response['valid_until'];
 					$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['access_token encrypt_nonce'])); 
 				}
+				unset($response);
 			}
 			//perform sync
 			if( ! empty($siteData->prji_access_token) && time() <= strtotime($siteData->prji_token_expiry) ) {
 				// encrypt our access token to go back to the server
-				$encAccessToken = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],$siteData->prji_access_token);
-				$encAccessToken['signature'] = base64_encode(sodium_crypto_sign_detached($encAccessToken['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
-				$encAccessToken['encrypted_content'] = base64_encode($encAccessToken['encrypted_content']);
-				$encAccessToken['encrypt_nonce'] = base64_encode($encAccessToken['encrypt_nonce']);
+				$accessToken['signature'] = base64_encode(sodium_crypto_sign_detached($siteData->prji_access_token,base64_decode(PRJI_SIGN_KEY)));
+				$accessToken['token'] = $siteData->prji_access_token;
 				
+				// Get 404 attacks since $siteData->last_404_attack_id_synced
 				$GLOBALS['stmts']['count_404_atks']->execute(array($siteData->last_404_attack_id_synced));
 				$a404_count = $GLOBALS['stmts']['count_404_atks']->fetchColumn();
 				$GLOBALS['stmts']['count_404_atks']->closeCursor();
 				if( $a404_count > 0 )
 				{
-					$request = array('request_type' => 'Report404Attack', 'access_token' => $encAccessToken);
+					$request = array('request_type' => 'Report404Attack', 'access_token' => $accessToken);
 					$GLOBALS['stmts']['get_404_atks']->execute(array($siteData->last_404_attack_id_synced));
 					$results = $GLOBALS['stmts']['get_404_atks']->fetchAll(PDO::FETCH_ASSOC);
 					$atks = array();
@@ -122,8 +123,8 @@ function PISynchronize($FORCE =  false)
 					foreach( $results as $record)
 					{
 						$atk = array(
-							'id' => $record['a404_id'],
-							'ip' => $record['addr'],
+							'id' => $record['a404_id'], // local ID isn't stored at Project Indigo, but is returned with a status indicator so success can be tracked
+							'ip' => $record['addr'], // attacker's IP addres
 							'uri' => $record['requested_uri'],
 							'timestamp'=> gmdate('c',strtotime($record['atk_timestamp'])),
 							'referrer' => null,
@@ -137,16 +138,20 @@ function PISynchronize($FORCE =  false)
 							'user_agent' => null,
 							'user_agent_encoded' => false
 							);
+						/*
 						if( ! empty($record['useragent']) )
 						{
-							if(hasDangerousChars($record['useragent'])
+							if(hasDangerousChars($record['useragent']) )
+								{}
 						}
+						*/
 						$atks[] = $atk;
 						unset($atk);
 					}
 					$request['reports'] = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
 					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($encAccessToken['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
+					unset($request);
 					// go through responses to confirm they were received/accepted.
 				}
 				//update database with new site data
