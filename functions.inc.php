@@ -93,7 +93,7 @@ function PISynchronize($FORCE =  false)
 				$handshake = array('request_type' => 'handshake','client_id' => PRJI_ACCOUNT_ID);
 				$encrypted = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],PRJI_SECRET_HASH);
 				$handshake['encrypted'] = base64_encode($encrypted['encrypted_content']);
-				$handshake['encrypted_nonce'] = base64_encode($encrypted['encrypt_nonce']);
+				$handshake['encrypt_nonce'] = base64_encode($encrypted['encrypt_nonce']);
 				$handshake['secret_signature'] = base64_encode(sodium_crypto_sign_detached($encrypted['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 				$response = sendAPIRequest($handshake);
 				unset($handshake);
