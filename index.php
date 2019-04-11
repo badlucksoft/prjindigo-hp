@@ -95,6 +95,29 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 		{
 			readfile($file);
 			exit();
+		} elseif( strcmp(THE_URI, '/favicon.ico') == 0 || strcmp(THE_URI,'/robots.txt') == 0 ) 
+		{
+			header('HTTP/1.0 404 Not Found',true,404);
+		}
+		else
+		{
+			// If the request isn't for one of the already specified URI's, it's at the very least a 404 attack as no other URLs exist on the site.
+			$data = array(
+				':requested_uri' => THE_URI,
+				':cookie_content' =>var_export($_COOKIE,true),
+				':get_content' => var_export($_GET,true),
+				':post_content' => var_export($_POST,true) ,
+				':useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null,
+				':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
+				':addr_id' =>hasAddr(requestorIP(),true)
+				);
+			$GLOBALS['stmts']['insert_404_atk']->execute($data);
+			$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+			header('HTTP/1.0 404 Not Found',true,404);
+			require_once 'header.inc.php';
+			echo '<p>Unfortunately, "' . THE_URI . '" could not be found.</p>';
+			require_once 'footer.inc.php';
+			
 		}
 	} elseif (preg_match('#^\/(default|index(\.(php|asp|jsp|htm|html|shtml|aspx|py|txt))?)?$#i',THE_URI) >0 ) {
 		require_once 'header.inc.php';
@@ -105,6 +128,20 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 		require_once 'footer.inc.php';
 	} else {
 		// If the request isn't for one of the already specified URI's, it's at the very least a 404 attack as no other URLs exist on the site.
-		
+		$data = array(
+			':requested_uri' => THE_URI,
+			':cookie_content' =>var_export($_COOKIE,true),
+			':get_content' => var_export($_GET,true),
+			':post_content' => var_export($_POST,true) ,
+			':useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null,
+			':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
+			':addr_id' =>hasAddr(requestorIP(),true)
+			);
+		$GLOBALS['stmts']['insert_404_atk']->execute($data);
+		$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+		header('HTTP/1.0 404 Not Found',true,404);
+		require_once 'header.inc.php';
+		echo '<p>Unfortunately, "' . THE_URI . '" could not be found.</p>';
+		require_once 'footer.inc.php';
 	}
 }
