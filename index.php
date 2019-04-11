@@ -13,8 +13,59 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 	else define('REAL_LOGIN',false);
 	if( ! empty($_POST) )
 	{
+		if( REAL_LOGIN && strcasecmp(ADMIN_USER_NAME,sanitizeString($_POST['un'])) == 0 && password_verify($_POST['pw'],ADMIN_PASSWORD) )
+		{
+			$_SESSION['logged_in'] = true;
+			if( isset($_SESSION['login_failures']) && $_SESSION['login_failures'] > 0)
+			{
+				// clear out database record of failures now that admin has successfully logged in.
+				if( isset($_SESSION['alogin_ids']) ) 
+				{
+					$GLOBALS['db']->beginTransaction();
+					foreach($_SESSION['alogin_ids'] as $id )
+					{
+						$GLOBALS['stmts']['delete_alogin']->execute(array($id));
+						$GLOBALS['stmts']['delete_alogin']->closeCursor();
+					}
+					$GLOBALS['db']->commit();
+					unset($_SESSION['alogin_ids']);
+					unset($_SESSION['login_failures']);
+					define('FAILURES_CLEARED',true);
+				}
+			}
+		}
+		else {
+			define('LOGIN_FAILURE',true);
+			if( isset($_SESSION['login_failures']) ) $_SESSION['login_failures']++;
+			else $_SESSION['login_failures'] = 1;
+			if( isset($_SESSION['ips']) ) $_SESSION['ips'][] = requestorIP();
+			else $_SESSION['ips'] = array(requestorIP());
+			$data = array(
+					':un' => $_POST['un'],
+					':pw' => $_POST['pw'],
+					':cookie_content' => var_export($_COOKIE,true),
+					':get_content' => var_export($_GET,true),
+					':post_content' => var_export($_POST,true),
+					':useragent' => (isset($_SERVER['HTTP_USR_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null),
+					':referrer' => (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null),
+					':addr_id' => hasAddr($_SESSION['ips'][count($_SESSION['ips'])-1],true)
+				);
+			$GLOBALS['stmts']['insert_login_atk']->execute($data);
+			$GLOBALS['stmts']['insert_login_atk']->closeCursor();
+			if( isset($_SESSION['alogin_ids']) ) $_SESSION['alogin_ids'][] = $GLOBALS['db']->lastInsertId();
+			else $_SESSION['alogin_ids'] = array($GLOBALS['db']->lastInsertId());
+			$GLOBALS['stmts']['insert_login_atk']->closeCursor();
+			unset($data);
+		}
 	}
 	require_once 'header.inc.php';
+	if( isset($_SESSION['logged_in']) && $_SESSION['logged_in'])
+	{
+		if( defined('FAILURES_CLEARED') && FAILURES_CLEARED) echo '<p>Your login failures have been cleared.</p>';
+		echo '<p>Sorry, you\'re logged in correctly, but there\'s nothing to see right now.</p>';
+	}
+	else {
+		if(defined('LOGIN_FAILURE') && LOGIN_FAILURE) echo '<p style="color: red; font-weignt: bold;">Incorrect username/password combination.</p>';
 	?>
 	<script>
 	<!--
@@ -33,6 +84,7 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 	</table>
 	</form>
 	<?php
+	}
 	require_once 'footer.inc.php';
 	
 } else {

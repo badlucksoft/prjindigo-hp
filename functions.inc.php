@@ -114,6 +114,7 @@ function PISynchronize($FORCE =  false)
 				$GLOBALS['stmts']['count_404_atks']->execute(array($siteData->last_404_attack_id_synced));
 				$a404_count = $GLOBALS['stmts']['count_404_atks']->fetchColumn();
 				$GLOBALS['stmts']['count_404_atks']->closeCursor();
+				// report 404 attacks
 				if( $a404_count > 0 )
 				{
 					$request = array('request_type' => 'Report404Attack', 'access_token' => $accessToken);
@@ -125,37 +126,108 @@ function PISynchronize($FORCE =  false)
 					{
 						$atk = array(
 							'id' => $record['a404_id'], // local ID isn't stored at Project Indigo, but is returned with a status indicator so success can be tracked
-							'ip' => $record['addr'], // attacker's IP addres
+							'ip' => $record['addr'], // attacker's IP address
 							'uri' => $record['requested_uri'],
 							'timestamp'=> gmdate('c',strtotime($record['atk_timestamp'])),
-							'referrer' => null,
-							'referrer_encoded' => false,
-							'post' => null,
-							'post_encoded' => false,
-							'get' => null,
-							'get_encoded' => false,
-							'cookie' => null,
-							'cookie_encoded' => false,
-							'user_agent' => null,
-							'user_agent_encoded' => false
+							'referrer' => hasDangerousCharacters($record['referrer']) ? base64_encode($record['referrer']):$record['referrer'],
+							'referrer_encoded' => hasDangerousCharacters($record['referrer']),
+							'post' => hasDangerousCharacters($record['post_content']) ? base64_encode($record['post_content']):$record['post_content'],
+							'post_encoded' => hasDangerousCharacters($record['post_content']),
+							'get' => hasDangerousCharacters($record['get_content']) ? base64_encode($record['get_content']):$record['get_content'],
+							'get_encoded' => hasDangerousCharacters($record['get_content']),
+							'cookie' => hasDangerousCharacters($record['cookie_content']) ? base64_encode($record['cookie_content']):$record['cookie_content'],
+							'cookie_encoded' => hasDangerousCharacters($record['cookie_content']),
+							'user_agent' => hasDangerousCharacters($record['useragent']) ? base64_encode($record['useragent']):$record['useragent'],
+							'user_agent_encoded' => hasDangerousCharacters($record['useragent'])
 							);
-						/*
-						if( ! empty($record['useragent']) )
-						{
-							if(hasDangerousChars($record['useragent']) )
-								{}
-						}
-						*/
 						$atks[] = $atk;
 						unset($atk);
 					}
-					$atkE =pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
+					$atkE = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
 					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => $atkE['encrypt_nonce']);
 					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
 					unset($request);
-					// go through responses to confirm they were received/accepted.
+					$response = json_decode($response);
+					if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign_public']) ) {
+						$result = pkDecrypt($serverKeys['encrypt_public'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
+						
+						if( $result !== false && ! empty($result) )
+						{
+							$responseData = json_decode($result);
+							$GLOBALS['db']->beginTransaction();
+							foreach( $responseData as $rd)
+							{
+								if( $atk->success ) {
+									$siteData->last_404_attack_id_synced = $rd->id;
+									$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
+									$GLOBALS['stmts']['delete_404']->closeCursor();
+								}
+							}
+							$GLOBALS['db']->commit();
+						}
+					}
 				}
+				// report login attacks
+				$GLOBALS['stmts']['count_login_atks']->execute(array($siteData->last_404_attack_id_synced));
+				$alogin_count = $GLOBALS['stmts']['count_login_atks']->fetchColumn();
+				$GLOBALS['stmts']['count_login_atks']->closeCursor();
+				// This is temporarily disabled as the feature isn't fully implemented on server yet.
+				if( false && $alogin_count > 0 )
+				{
+					$request = array('request_type' => 'ReportLoginAttack', 'access_token' => $accessToken);
+					$GLOBALS['stmts']['get_alogin_atks']->execute(array($siteData->last_404_attack_id_synced));
+					$results = $GLOBALS['stmts']['get_alogin_atks']->fetchAll(PDO::FETCH_ASSOC);
+					$atks = array();
+					$GLOBALS['stmts']['get_alogin_atks']->closeCursor();
+					foreach( $results as $record)
+					{
+						$atk = array(
+							'id' => $record['alogin_id'], // local ID isn't stored at Project Indigo, but is returned with a status indicator so success can be tracked
+							'ip' => $record['addr'], // attacker's IP address
+							'username' => $record['un'],
+							'password' => $record['pwd'],
+							'timestamp'=> gmdate('c',strtotime($record['atk_timestamp'])),
+							'referrer' => hasDangerousCharacters($record['referrer']) ? base64_encode($record['referrer']):$record['referrer'],
+							'referrer_encoded' => hasDangerousCharacters($record['referrer']),
+							'post' => hasDangerousCharacters($record['post_content']) ? base64_encode($record['post_content']):$record['post_content'],
+							'post_encoded' => hasDangerousCharacters($record['post_content']),
+							'get' => hasDangerousCharacters($record['get_content']) ? base64_encode($record['get_content']):$record['get_content'],
+							'get_encoded' => hasDangerousCharacters($record['get_content']),
+							'cookie' => hasDangerousCharacters($record['cookie_content']) ? base64_encode($record['cookie_content']):$record['cookie_content'],
+							'cookie_encoded' => hasDangerousCharacters($record['cookie_content']),
+							'user_agent' => hasDangerousCharacters($record['useragent']) ? base64_encode($record['useragent']):$record['useragent'],
+							'user_agent_encoded' => hasDangerousCharacters($record['useragent'])
+							);
+						$atks[] = $atk;
+						unset($atk);
+					}
+					$atkE = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
+					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => $atkE['encrypt_nonce']);
+					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+					$response = sendAPIRequest($request);
+					unset($request);
+					$response = json_decode($response);
+					if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign_public']) ) {
+						$result = pkDecrypt($serverKeys['encrypt_public'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
+						
+						if( $result !== false && ! empty($result) )
+						{
+							$responseData = json_decode($result);
+							$GLOBALS['db']->beginTransaction();
+							foreach( $responseData as $rd)
+							{
+								if( $atk->success ) {
+									$siteData->last_404_attack_id_synced = $rd->id;
+									$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
+									$GLOBALS['stmts']['delete_404']->closeCursor();
+								}
+							}
+							$GLOBALS['db']->commit();
+						}
+					}
+				}
+				
 				//update database with new site data
 				$siteData->last_sync_timestamp = gmdate('c');
 				$GLOBALS['stmts']['update_site_data']->execute(array(json_encode($siteData)));
