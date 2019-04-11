@@ -55,11 +55,11 @@ function PISynchronize($FORCE =  false)
 	$GLOBALS['stmts']['get_site_data']->execute();
 	$siteData = json_decode($GLOBALS['stmts']['get_site_data']->fetchColumn());
 	$GLOBALS['stmts']['get_site_data']->closeCursor();
-	if( is_bool($FORCE) && $FORCE === true || is_null($siteData->last_sync_timestamp) || time() >= strtotime('+' . MAXIMUM_SYNC_WINDOW . ' seconds',strtotime($siteData->last_sync_timestamp))) {
+	if( is_bool($FORCE) && $FORCE === true && $siteData !== false || is_null($siteData->last_sync_timestamp) || time() >= strtotime('+' . MAXIMUM_SYNC_WINDOW . ' seconds',strtotime($siteData->last_sync_timestamp))) {
 		ob_end_flush(); //make sure all output has been sent
 		if( ! empty(PRJI_ACCOUNT_ID) && ! empty(PRJI_SECRET_HASH) && ! empty(PRJI_ENCRYPT_KEY) && ! empty(PRJI_SIGN_KEY) ) {
 			//get server key and confirm
-			$currentServerKeys = sendAPIRequest(array('request_type' => 'getServerPK'));
+			$currentServerKeys = json_decode(sendAPIRequest(array('request_type' => 'getServerPK')),true);
 			$serverKeys = array('encrypt' => null,  'sign' => null);
 			if( ! empty($currentServerKeys) )
 			{
@@ -97,9 +97,10 @@ function PISynchronize($FORCE =  false)
 				$handshake['secret_signature'] = base64_encode(sodium_crypto_sign_detached($encrypted['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 				$response = sendAPIRequest($handshake);
 				unset($handshake);
+				$response = json_decode($response,true);
 				if( sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
 					$siteData->prji_token_expiry = $response['valid_until'];
-					$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['access_token encrypt_nonce'])); 
+					$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['encrypt_nonce'])); 
 				}
 				unset($response);
 			}
@@ -148,8 +149,9 @@ function PISynchronize($FORCE =  false)
 						$atks[] = $atk;
 						unset($atk);
 					}
-					$request['reports'] = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
-					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($encAccessToken['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+					$atkE =pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
+					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => $atkE['encrypt_nonce']);
+					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
 					unset($request);
 					// go through responses to confirm they were received/accepted.
@@ -164,7 +166,7 @@ function PISynchronize($FORCE =  false)
 }
 function sendAPIRequest($ARR)
 {
-	$curl = curl_init('https://dev.prjindigo.com/api/0/');
+	$curl = curl_init('https://www.prjindigo.com/api/0/');
 	curl_setopt($curl, CURLOPT_POST,true);
 	curl_setopt($curl, CURLOPT_RETURNTRANSFER,true);
 	curl_setopt($curl, CURLOPT_POSTFIELDS,json_encode($ARR));
