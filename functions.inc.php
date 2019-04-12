@@ -145,8 +145,8 @@ function PISynchronize($FORCE =  false)
 						$atks[] = $atk;
 						unset($atk);
 					}
-					$atkE = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
-					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => $atkE['encrypt_nonce']);
+					$atkE = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],json_encode($atks));
+					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => base64_encode($atkE['encrypt_nonce']));
 					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
 					unset($request);
