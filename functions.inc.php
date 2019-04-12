@@ -151,8 +151,8 @@ function PISynchronize($FORCE =  false)
 					$response = sendAPIRequest($request);
 					unset($request);
 					$response = json_decode($response);
-					if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign_public']) ) {
-						$result = pkDecrypt($serverKeys['encrypt_public'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
+					if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign']) ) {
+						$result = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
 						
 						if( $result !== false && ! empty($result) )
 						{
@@ -204,7 +204,7 @@ function PISynchronize($FORCE =  false)
 						$atks[] = $atk;
 						unset($atk);
 					}
-					$atkE = pkEncrypt(PRJI_ENCRYPT_KEY,$serverKeys['encrypt'],json_encode($atks));
+					$atkE = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],json_encode($atks));
 					$request['reports'] = array('encrypted_content' => base64_encode($atkE['encrypted_content']), 'encrypt_nonce' => $atkE['encrypt_nonce']);
 					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
