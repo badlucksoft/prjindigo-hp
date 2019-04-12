@@ -88,7 +88,7 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 	require_once 'footer.inc.php';
 	
 } else {
-	if( strcmp(THE_URI, '/') != 0 && preg_match('#^\/(([a-zA-Z0-9-_\.]*(\.(jpg|gif|png|svg|htm|html|mp4|wav|mpg|mp3|css|js|txt|avi|mov|ico))?)$#i',THE_URI,$match) > 0 && strcmp(basename(THE_URI),basename(HOMEPAGE_CONTENT_FILENAME)) != 0 )
+	if( strcmp(THE_URI, '/') != 0 && preg_match('#^\/(([a-zA-Z0-9-_\.]*(\.(jpg|gif|png|svg|htm|html|mp4|wav|mpg|mp3|css|js|txt|avi|mov|ico))?))$#i',THE_URI,$match) > 0 && strcmp(basename(THE_URI),basename(HOMEPAGE_CONTENT_FILENAME)) != 0 )
 	{
 		$file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . basename(sanitizeString($match[1]));
 		if( file_exists($file) && is_readable($file) )

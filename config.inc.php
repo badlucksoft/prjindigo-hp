@@ -49,6 +49,7 @@ define('DATABASE_TYPE','sqlite');
 define('DATABASE_FILENAME', SITE_DIR . 'prji_hp.db');
 define('HOMEPAGE_CONTENT_FILENAME',SITE_DIR . 'homepage.content.html');
 define('MAXIMUM_SYNC_WINDOW', 86400); // wait at most 1 day before synchronizing
+define('REPORT_PERCENT',15); // chance that any request will trigger the report mechanism
 ini_set('display_errors',false);
 ini_set('display_startup_errors',false);
 
