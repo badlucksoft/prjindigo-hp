@@ -160,7 +160,7 @@ function PISynchronize($FORCE =  false)
 							$GLOBALS['db']->beginTransaction();
 							foreach( $responseData as $rd)
 							{
-								if( $atk->success ) {
+								if( $rd->success ) {
 									$siteData->last_404_attack_id_synced = $rd->id;
 									$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
 									$GLOBALS['stmts']['delete_404']->closeCursor();
