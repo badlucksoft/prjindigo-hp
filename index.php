@@ -43,9 +43,9 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 			$data = array(
 					':un' => $_POST['un'],
 					':pw' => $_POST['pw'],
-					':cookie_content' => var_export($_COOKIE,true),
-					':get_content' => var_export($_GET,true),
-					':post_content' => var_export($_POST,true),
+					':cookie_content' => (empty($_COOKIE) ? null:var_export($_COOKIE,true)),
+					':get_content' => (empty($_GET) ? null:var_export($_GET,true)),
+					':post_content' => (empty($_POST) ? null:var_export($_POST,true)),
 					':useragent' => (isset($_SERVER['HTTP_USR_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null),
 					':referrer' => (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null),
 					':addr_id' => hasAddr($_SESSION['ips'][count($_SESSION['ips'])-1],true)
@@ -104,9 +104,9 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 			// If the request isn't for one of the already specified URI's, it's at the very least a 404 attack as no other URLs exist on the site.
 			$data = array(
 				':requested_uri' => THE_URI,
-				':cookie_content' =>var_export($_COOKIE,true),
-				':get_content' => var_export($_GET,true),
-				':post_content' => var_export($_POST,true) ,
+				':cookie_content' =>(empty($_COOKIE) ? null:var_export($_COOKIE,true)),
+				':get_content' => (empty($_GET) ? null:var_export($_GET,true)),
+				':post_content' => (empty($_POST) ? null:var_export($_POST,true)) ,
 				':useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null,
 				':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
 				':addr_id' =>hasAddr(requestorIP(),true)
@@ -120,6 +120,10 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 			
 		}
 	} elseif (preg_match('#^\/(default|index(\.(php|asp|jsp|htm|html|shtml|aspx|py|txt))?)?$#i',THE_URI) >0 ) {
+		if( ! empty(THE_QUERY) || ! empty($_POST) || (! empty($_COOKIE) && (! isset($_COOKIE['LOGIN_COOKIE_NAME']) && ! isset($_COOKIE[session_name()]) )))
+		{
+			// Record general web attack, but show the homepage anyway.
+		}
 		require_once 'header.inc.php';
 		if( file_exists(HOMEPAGE_CONTENT_FILENAME) && is_readable(HOMEPAGE_CONTENT_FILENAME) ) readfile(HOMEPAGE_CONTENT_FILENAME);
 		else {
@@ -130,9 +134,9 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 		// If the request isn't for one of the already specified URI's, it's at the very least a 404 attack as no other URLs exist on the site.
 		$data = array(
 			':requested_uri' => THE_URI,
-			':cookie_content' =>var_export($_COOKIE,true),
-			':get_content' => var_export($_GET,true),
-			':post_content' => var_export($_POST,true) ,
+			':cookie_content' =>(empty($_COOKIE) ? null:var_export($_COOKIE,true)),
+			':get_content' => (empty($_GET) ? null:var_export($_GET,true)),
+			':post_content' => (empty($_POST)?null:var_export($_POST,true)) ,
 			':useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null,
 			':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
 			':addr_id' =>hasAddr(requestorIP(),true)
