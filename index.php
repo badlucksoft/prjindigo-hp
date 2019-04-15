@@ -123,6 +123,17 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 		if( ! empty(THE_QUERY) || ! empty($_POST) || (! empty($_COOKIE) && (! isset($_COOKIE['LOGIN_COOKIE_NAME']) && ! isset($_COOKIE[session_name()]) )))
 		{
 			// Record general web attack, but show the homepage anyway.
+		$data = array(
+			':requested_uri' => THE_URI,
+			':cookie_content' =>(empty($_COOKIE) ? null:var_export($_COOKIE,true)),
+			':get_content' => (empty($_GET) ? null:var_export($_GET,true)),
+			':post_content' => (empty($_POST)?null:var_export($_POST,true)) ,
+			':useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT']:null,
+			':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
+			':addr_id' =>hasAddr(requestorIP(),true)
+			);
+			$GLOBALS['stmts']['insert_web_atk']->execute($data);
+			$GLOBALS['stmts']['insert_web_atk']->closeCursor();
 		}
 		require_once 'header.inc.php';
 		if( file_exists(HOMEPAGE_CONTENT_FILENAME) && is_readable(HOMEPAGE_CONTENT_FILENAME) ) readfile(HOMEPAGE_CONTENT_FILENAME);

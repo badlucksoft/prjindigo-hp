@@ -32,6 +32,7 @@ function prepareStatements(){
 	$GLOBALS['stmts']['delete_404'] = $GLOBALS['db']->prepare('delete from a404 where a404_id = ?');
 	$GLOBALS['stmts']['insert_404_atk'] = $GLOBALS['db']->prepare('insert into a404 (requested_uri,cookie_content,get_content,post_content,useragent,referrer,addr_id) values (:requested_uri,:cookie_content,:get_content,:post_content,:useragent,:referrer,:addr_id)');
 	$GLOBALS['stmts']['insert_login_atk'] = $GLOBALS['db']->prepare('insert into alogin (un,pw,cookie_content,get_content,post_content,useragent,referrer,addr_id) values (:un,:pw,:cookie_content,:get_content,:post_content,:useragent,:referrer,:addr_id)');
+	$GLOBALS['stmts']['insert_web_atk'] = $GLOBALS['db']->prepare('insert into aweb (request_uri,addr_id,cookie_content,get_content,post_content,referrer,useragent) values (:request_uri,:addr_id,:cookie_content,:get_content,:post_content,:referrer,:useragent)');
 	$GLOBALS['stmts']['count_login_atks'] = $GLOBALS['db']->prepare('select count(alogin_id) from alogin where alogin_id > ?');
 	$GLOBALS['stmts']['get_alogin_atks'] = $GLOBALS['db']->prepare('select * from alogin al inner join addrs ad on al.addr_id = ad.addr_id where alogin_id > ? order by atk_timestamp limit ' . PRJI_SUBMISSION_LIMIT);
 	$GLOBALS['stmts']['get_last_insert'] = $GLOBALS['db']->prepare('select last_insert_rowid()');
