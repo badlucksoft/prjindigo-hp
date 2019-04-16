@@ -111,8 +111,16 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 				':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
 				':addr_id' =>hasAddr(requestorIP(),true)
 				);
-			$GLOBALS['stmts']['insert_404_atk']->execute($data);
-			$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+			if( ! empty(THE_QUERY) || ! empty($_POST) || (! empty($_COOKIE) && (! isset($_COOKIE['LOGIN_COOKIE_NAME']) && ! isset($_COOKIE[session_name()]) )))
+			{
+				$GLOBALS['stmts']['insert_web_atk']->execute($data);
+				$GLOBALS['stmts']['insert_web_atk']->closeCursor();
+			}
+			else
+			{
+				$GLOBALS['stmts']['insert_404_atk']->execute($data);
+				$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+			}
 			header('HTTP/1.0 404 Not Found',true,404);
 			require_once 'header.inc.php';
 			echo '<p>Unfortunately, "' . THE_URI . '" could not be found.</p>';
@@ -152,8 +160,16 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 			':referrer' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER']:null,
 			':addr_id' =>hasAddr(requestorIP(),true)
 			);
-		$GLOBALS['stmts']['insert_404_atk']->execute($data);
-		$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+		if( ! empty(THE_QUERY) || ! empty($_POST) || (! empty($_COOKIE) && (! isset($_COOKIE['LOGIN_COOKIE_NAME']) && ! isset($_COOKIE[session_name()]) )))
+		{
+			$GLOBALS['stmts']['insert_web_atk']->execute($data);
+			$GLOBALS['stmts']['insert_web_atk']->closeCursor();
+		}
+		else
+		{
+			$GLOBALS['stmts']['insert_404_atk']->execute($data);
+			$GLOBALS['stmts']['insert_404_atk']->closeCursor();
+		}
 		header('HTTP/1.0 404 Not Found',true,404);
 		require_once 'header.inc.php';
 		echo '<p>Unfortunately, "' . THE_URI . '" could not be found.</p>';
