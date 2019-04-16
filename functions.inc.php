@@ -231,6 +231,7 @@ function PISynchronize($FORCE =  false)
 				}
 				
 				//update database with new site data
+				$siteData->sync_count++;
 				$siteData->last_sync_timestamp = gmdate('c');
 				$GLOBALS['stmts']['update_site_data']->execute(array(json_encode($siteData)));
 				$GLOBALS['stmts']['update_site_data']->closeCursor();
