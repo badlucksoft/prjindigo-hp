@@ -95,7 +95,7 @@ if(strcmp(THE_URI,LOGIN_URI) == 0) {
 		{
 			readfile($file);
 			exit();
-		} elseif( strcmp(THE_URI, '/favicon.ico') == 0 || strcmp(THE_URI,'/robots.txt') == 0 ) 
+		} elseif( strcmp(THE_URI, '/favicon.ico') == 0 || strcmp(THE_URI,'/robots.txt') == 0 || strcmp(THE_URI,'/sitemap.xml') == 0 || strcmp(THE_URI,'/sitemap_index.xml') == 0 ) 
 		{
 			header('HTTP/1.0 404 Not Found',true,404);
 		}
