@@ -178,7 +178,7 @@ function PISynchronize($FORCE =  false)
 				if( false && $alogin_count > 0 )
 				{
 					$request = array('request_type' => 'ReportLoginAttack', 'access_token' => $accessToken);
-					$GLOBALS['stmts']['get_alogin_atks']->execute(array($siteData->last_404_attack_id_synced));
+					$GLOBALS['stmts']['get_alogin_atks']->execute(array($siteData->last_login_attack_id_synced));
 					$results = $GLOBALS['stmts']['get_alogin_atks']->fetchAll(PDO::FETCH_ASSOC);
 					$atks = array();
 					$GLOBALS['stmts']['get_alogin_atks']->closeCursor();
@@ -220,9 +220,9 @@ function PISynchronize($FORCE =  false)
 							foreach( $responseData as $rd)
 							{
 								if( $atk->success ) {
-									$siteData->last_404_attack_id_synced = $rd->id;
-									$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
-									$GLOBALS['stmts']['delete_404']->closeCursor();
+									$siteData->last_login_attack_id_synced = $rd->id;
+									$GLOBALS['stmts']['delete_alogin']->execute(array($rd->id));
+									$GLOBALS['stmts']['delete_alogin']->closeCursor();
 								}
 							}
 							$GLOBALS['db']->commit();
