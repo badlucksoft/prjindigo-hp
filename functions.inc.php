@@ -39,9 +39,9 @@ function requestorIP()
 	$proxyip = null;
 	foreach($skeys as $key)
 	{
-		if( strcasecmp($key,'CF-Connecting-IP') == 0 ) {
+		if( strcasecmp($key,'HTTP_CF_CONNECTING_IP') == 0 ) {
 			$cfip = $_SERVER[$key];
-		} elseif( strcasecmp($key,'X-Forwarded-For') == 0) {
+		} elseif( strcasecmp($key,'HTTP_X_FORWARDED_FOR') == 0) {
 			preg_match('/^([\da-fA-F\:\.]*)\[?.*\]?$/',$_SERVER[$key],$ips);
 			$proxyip = $ips[1];
 		}
