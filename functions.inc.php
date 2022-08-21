@@ -50,6 +50,17 @@ function requestorIP()
 	elseif( ! is_null($proxyip) && isPrivateIP($proxyip) === false  ) $ip = $proxyip;
 	return $ip;
 }
+function PIHandshake($serverKeys)
+{
+				$handshake = array('request_type' => 'handshake','client_id' => PRJI_ACCOUNT_ID);
+				$encrypted = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],PRJI_SECRET_HASH);
+				$handshake['encrypted'] = base64_encode($encrypted['encrypted_content']);
+				$handshake['encrypt_nonce'] = base64_encode($encrypted['encrypt_nonce']);
+				$handshake['secret_signature'] = base64_encode(sodium_crypto_sign_detached($encrypted['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
+				$response = sendAPIRequest($handshake);
+				unset($handshake);
+				return $response;
+}
 function PISynchronize($FORCE =  false)
 {
 	$GLOBALS['stmts']['get_site_data']->execute();
@@ -92,6 +103,7 @@ function PISynchronize($FORCE =  false)
 				$siteData->prji_access_token = null;
 				$siteData->prji_token_expiry = null;
 				// perform handshake
+				/*
 				$handshake = array('request_type' => 'handshake','client_id' => PRJI_ACCOUNT_ID);
 				$encrypted = pkEncrypt(base64_decode(PRJI_ENCRYPT_KEY),$serverKeys['encrypt'],PRJI_SECRET_HASH);
 				$handshake['encrypted'] = base64_encode($encrypted['encrypted_content']);
@@ -100,9 +112,15 @@ function PISynchronize($FORCE =  false)
 				$response = sendAPIRequest($handshake);
 				unset($handshake);
 				$response = json_decode($response,true);
-				if( sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
+				*/
+				$response = json_decode(PIHandshake($serverKeys));
+				if( isset($response['response']) && strcmp($response['response'],'greetings') == 0 && sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
 					$siteData->prji_token_expiry = $response['valid_until'];
 					$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['encrypt_nonce'])); 
+				}
+				else {
+					unset($response);
+					return;
 				}
 				unset($response);
 			}
@@ -150,23 +168,36 @@ function PISynchronize($FORCE =  false)
 					$request['report_signature'] = base64_encode(sodium_crypto_sign_detached($atkE['encrypted_content'],base64_decode(PRJI_SIGN_KEY)));
 					$response = sendAPIRequest($request);
 					unset($request);
-					$response = json_decode($response);
-					if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign']) ) {
-						$result = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
-						
-						if( $result !== false && ! empty($result) )
+					if($response !== false ) {
+						$response = json_decode($response);
+						if( isset($response->response) && strcmp($response->response,'handshakeRequired') == 0 )
 						{
-							$responseData = json_decode($result);
-							$GLOBALS['db']->beginTransaction();
-							foreach( $responseData as $rd)
-							{
-								if( $rd->success ) {
-									$siteData->last_404_attack_id_synced = $rd->id;
-									$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
-									$GLOBALS['stmts']['delete_404']->closeCursor();
-								}
+							$response = json_decode(PIHandshake($serverKeys));
+							if( isset($response['response']) && strcmp($response['response'],'greetings') == 0 && sodium_crypto_sign_verify_detached(base64_decode($response['signature']),base64_decode($response['access_token']),$serverKeys['sign']) ) {
+								$siteData->prji_token_expiry = $response['valid_until'];
+								$siteData->prji_access_token = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response['access_token']),base64_decode($response['encrypt_nonce'])); 
+								$GLOBALS['stmts']['update_site_data']->execute(array(json_encode($siteData)));
+								$GLOBALS['stmts']['update_site_data']->closeCursor();
+								return;
 							}
-							$GLOBALS['db']->commit();
+						}
+						if( sodium_crypto_sign_verify_detached(base64_decode($response->result_signature),base64_decode($response->result->encrypted_content),$serverKeys['sign']) ) {
+							$result = pkDecrypt($serverKeys['encrypt'],base64_decode(PRJI_ENCRYPT_KEY),base64_decode($response->result->encrypted_content),base64_decode($response->result->encrypt_nonce));
+							
+							if( $result !== false && ! empty($result) )
+							{
+								$responseData = json_decode($result);
+								$GLOBALS['db']->beginTransaction();
+								foreach( $responseData as $rd)
+								{
+									if( $rd->success ) {
+										$siteData->last_404_attack_id_synced = $rd->id;
+										$GLOBALS['stmts']['delete_404']->execute(array($rd->id));
+										$GLOBALS['stmts']['delete_404']->closeCursor();
+									}
+								}
+								$GLOBALS['db']->commit();
+							}
 						}
 					}
 				}
@@ -250,7 +281,7 @@ function sendAPIRequest($ARR)
 	$result = curl_exec($curl);
 	if( $result === false )
 	{
-		echo "error: " . curl_error($curl);
+		file_put_contents('sendApiRequest_error', date('Y-m-d H:i:s',$_SERVER['REQUEST_TIME']) . ":\t" . curl_error($curl) . "\n",FILE_APPEND);
 	}
 	curl_close($curl);
 	return $result;

@@ -7,6 +7,22 @@ define('BASE_DOMAIN_NAME',$_SERVER['HTTP_HOST']);
 define('BASE_URL','http' . (USE_SSL_TLS ? 's':'') . '://' . BASE_DOMAIN_NAME);
 define('SITE_NAME','My Site'); // Change this
 
+define('DATABASE_TYPE_SQLITE',0);
+define('DATABASE_TYPE_POSTGRES',1);
+
+define('DATABASE_TYPE',DATABASE_TYPE_SQLITE);
+
+switch(DATABASE_TYPE)
+{
+	case DATABASE_TYPE_POSTGRES: {
+			define('PG_USE_SCHEMA',true);
+			define('PG_SCHEMA','pihp');
+			define('PG_USE_UUIDS',false); // Requires the following be run, possibly as super user: create extension "uuid-ossp";
+	}break;
+	default: {
+	}
+}
+
 /*
 	Site login settings
 */
